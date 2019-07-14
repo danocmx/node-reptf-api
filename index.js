@@ -3,6 +3,38 @@ const request = require("request");
 
 
 const MAIN_SITE = "https://rep.tf";
+const ALIASES = {
+    "bans": {
+        "stfBans": "scraptf",
+        "mpBans": "mptf",
+        "bzBans": "bazaar",
+        "steamBans": "steam",
+        "ppmBans": "ppm",
+        "hgBans": "hg",
+        "nhsBans": "nhs",
+        "stBans": "smt",
+        "fogBans": "fog",
+        "etf2lBans": "etf2l",
+        "bptfBans": "bptf",
+        "srBans": "sr"
+    },
+    "otherinfo": {
+        "Profile Created": "profile_creation",
+        "Owned Games": "owner_games",
+        "TF2 Play Time": "tf2_pt",
+        "CSGO Play Time": "csgo_pt",
+        "Dota 2 Play Time": "dota2_pt",
+        "TF2 Backpack Value": "tf2_bpvalue"
+    },
+    "steamids": {
+        "Name": "name",
+        "Community ID": "Steam64ID",
+        "Steam 2": "Steam2ID",
+        "Steam 3": "Steam3ID",
+        "Profile URL": "custom_url",
+        "url": "community_url"
+    }
+}
 /* TODO: 
     - add docs
     - add eslint
@@ -30,14 +62,26 @@ function getUserProfile(steam64ID, callback) {
             }
 
             [ name, property ] = id.split(": ");
-            response.profile.steamids[name] = property
+            response.profile.steamids[ ALIASES.steamids[name] ] = property
         }
 
         $otherinfo = cheerio.load(response.otherinfo);
         response.profile.otherinfo = {}
-        /* TODO:
-            parse otherinfo property since it's being weird
-        */
+        
+        const otherinfo = response.profile.otherinfo;
+        $otherinfo("b").remove().each((_, info) => {
+            const infoKey = $otherinfo(info).text().replace(":", "");
+            otherinfo[ ALIASES.otherinfo[infoKey.replace(":", "")] ] = null;  // Have to do another replace because for some odd reason CSGO Play Time just still has it
+        })
+
+        const otherinfoParsed = $otherinfo.text().trim().match(/(\w+ \d+, \d+)\s(\d+)\s(\d+\shours)\s(\d+\shours)\s(\d+\shours)/);
+        const otherinfoKeys = Object.keys(otherinfo);
+        
+        otherinfoParsed.forEach((info, index) => {
+            if (index === 0) return;
+            const key = otherinfoKeys[ index-1 ];
+            otherinfo[ key.replace(":", "") ] = index === 1 ? Date.parse(info) : info;
+        })
 
         callback(null, response.profile);
     })
@@ -53,6 +97,7 @@ function getUserBans(steam64ID, callback) {
         delete body.success;
         delete body.message;
 
+        const Bans = {}
         for (const type in body) {
             if (!body.hasOwnProperty(type)) {
                 continue;
@@ -66,13 +111,17 @@ function getUserBans(steam64ID, callback) {
 
             /* TODO:
                 - parse message property
-                - rename ban type names
             */
+            Bans[ ALIASES.bans[type] ] = ban;
         }
 
-        callback(null, body);
+        callback(null, Bans);
     })
 }
+
+exports.getUserBans = getUserBans;
+exports.getUserProfile = getUserProfile;
+
 
 function apiCall(httpsMethod, method, search, callback) {
     const options = {
@@ -110,7 +159,3 @@ function apiCall(httpsMethod, method, search, callback) {
         return;
     })
 }
-
-
-exports.getUserBans = getUserBans;
-exports.getUserProfile = getUserProfile;
