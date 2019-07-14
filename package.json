@@ -1,6 +1,6 @@
 {
   "name": "reptf-scrape",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "async": "^3.1.0",
     "cheerio": "^1.0.0-rc.3",
     "request": "^2.88.0"
   }

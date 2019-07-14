@@ -1,5 +1,6 @@
 const cheerio = require("cheerio");
 const request = require("request");
+const async = require("async");
 
 
 const MAIN_SITE = "https://rep.tf";
@@ -39,6 +40,17 @@ const ALIASES = {
     - add docs
     - add eslint
 */
+
+function getUserInfo(steam64ID, callback) {
+    async.parallel({
+        profile: function(callback) {
+            getUserProfile(steam64ID, callback);
+        },
+        bans: function(callback) {
+            getUserBans(steam64ID, callback);
+        }
+    }, callback);
+}
 
 function getUserProfile(steam64ID, callback) {
     apiCall("POST", "profile", steam64ID, (err, response) => {
@@ -119,6 +131,7 @@ function getUserBans(steam64ID, callback) {
     })
 }
 
+exports.getUserInfo = getUserInfo;
 exports.getUserBans = getUserBans;
 exports.getUserProfile = getUserProfile;
 
